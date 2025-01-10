@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Messenger</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            width: 450px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+        }
+
+        #login-area, #chat-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #login-area h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+       #login-area input {
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+             font-size: 1em;
+        }
+         #login-area input:focus {
+             border-color: #007bff;
+              outline: none;
+          }
+
+        #login-area button {
+            padding: 12px 16px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+         #login-area button:hover {
+               background-color: #0056b3;
+           }
+
+         #login-area button:active{
+               transform: scale(0.98)
+           }
+
+
+
+        #messages {
+            border: 1px solid #ddd;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background-color: #e0e0e0;
+            display: inline-block;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 0.95em;
+        }
+
+
+        .sent {
+            align-self: flex-end;
+            background-color: #c2e7ff;
+        }
+
+
+        .input-area {
+            display: flex;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+             font-size: 1em;
+        }
+         .input-area input:focus {
+               border-color: #007bff;
+                outline: none;
+            }
+
+
+        .input-area button {
+            padding: 12px 16px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 8px;
+             font-size: 1em;
+        }
+
+        .input-area button:hover {
+              background-color: #0056b3;
+        }
+
+          .input-area button:active{
+                transform: scale(0.98)
+            }
+
+        .error {
+            color: red;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="login-area">
+            <h2>Login</h2>
+            <input type="text" id="username-input" placeholder="Enter your username">
+            <button id="login-btn">Login</button>
+            <p id="login-error" class="error"></p>
+        </div>
+        <div id="chat-area" style="display: none;">
+            <div id="messages"></div>
+            <div class="input-area">
+                <input type="text" id="message-input" placeholder="Type your message...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginArea = document.getElementById('login-area');
+            const chatArea = document.getElementById('chat-area');
+            const usernameInput = document.getElementById('username-input');
+            const loginBtn = document.getElementById('login-btn');
+            const loginError = document.getElementById('login-error');
+            const messagesDiv = document.getElementById('messages');
+            const messageInput = document.getElementById('message-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            let username = localStorage.getItem('username');
+            let messages = [];
+
+             function requestNotificationPermission() {
+                if (!("Notification" in window)) {
+                    console.log("This browser does not support notifications.");
+                } else if (Notification.permission === "granted") {
+                    console.log("Notification permission already granted.");
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(function(permission) {
+                        if (permission === "granted") {
+                             console.log("Notification permission has been granted by user.");
+                        }
+                   });
+                }
+             }
+
+
+             function showNotification(sender, text) {
+                   if (Notification.permission === "granted" ) {
+                        new Notification(`New message from ${sender}`, {
+                            body: text,
+                            icon: 'https://www.freeiconspng.com/uploads/message-icon-png-14.png',
+                        });
+                    }
+             }
+
+
+            function loadStoredData() {
+                const storedMessages = localStorage.getItem('messages');
+                if (storedMessages) {
+                    messages = JSON.parse(storedMessages);
+                }
+            }
+
+            function saveMessagesToLocalStorage() {
+                localStorage.setItem('messages', JSON.stringify(messages));
+            }
+
+             function updateMessageDisplay() {
+                 messagesDiv.innerHTML = '';
+                 messages.forEach(msg => {
+                     const messageElement = document.createElement('div');
+                     messageElement.classList.add('message');
+
+                      if (msg.sender === username) {
+                         messageElement.classList.add('sent');
+                     }
+
+                     messageElement.textContent = `${msg.sender}: ${msg.text}`;
+                      messagesDiv.appendChild(messageElement);
+                 });
+                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                 messages = messages.filter(msg => msg.seen === false);
+                  saveMessagesToLocalStorage();
+             }
+
+
+            function addMessage(sender, text) {
+                const newMessage = {
+                    sender: sender,
+                    text: text,
+                    seen: false
+                };
+                messages.push(newMessage);
+                 saveMessagesToLocalStorage();
+                 updateMessageDisplay();
+
+                 if (sender !== username) {
+                    showNotification(sender, text);
+                }
+            }
+
+
+            if (username) {
+                loginArea.style.display = 'none';
+                chatArea.style.display = 'flex';
+                loadStoredData();
+                updateMessageDisplay();
+                requestNotificationPermission() ;
+            }
+
+            loginBtn.addEventListener('click', () => {
+                const newUsername = usernameInput.value.trim();
+                if (newUsername) {
+                    localStorage.setItem('username', newUsername);
+                    username = newUsername;
+                    loginArea.style.display = 'none';
+                    chatArea.style.display = 'flex';
+                     loadStoredData();
+                    updateMessageDisplay();
+                    requestNotificationPermission();
+                } else {
+                    loginError.textContent = 'Please enter a username.';
+                }
+            });
+
+            sendBtn.addEventListener('click', () => {
+               const messageText = messageInput.value.trim();
+                if(messageText){
+                  addMessage(username, messageText);
+                    messageInput.value = '';
+                }
+            });
+
+            messageInput.addEventListener('keypress', function(event) {
+                  if (event.key === "Enter") {
+                      event.preventDefault();
+                      sendBtn.click();
+                  }
+            });
+
+            setInterval(() => {
+                  updateMessageDisplay();
+                }, 1000);
+        });
+
+    </script>
+</body>
+</html>
